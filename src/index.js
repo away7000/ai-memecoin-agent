@@ -21,6 +21,10 @@ async function scanLoop() {
 
     const tokens = await scanTokens();
 
+    if (!tokens || tokens.length === 0) {
+  console.log("⚠️ No tokens (GMGN gagal)");
+  return;
+}
     for (let token of tokens.slice(0, 1)) {
 
       // 🛡️ honeypot + slippage check
@@ -78,6 +82,10 @@ setInterval(scanLoop, 30000);
 
   const tokens = await scanTokens();
 
+if (!tokens || tokens.length === 0) {
+  console.log("⚠️ No tokens (GMGN gagal)");
+  return;
+}
   for (let token of tokens.slice(0, 1)) {
     const safe = await isSafeAdvanced(token);
 
