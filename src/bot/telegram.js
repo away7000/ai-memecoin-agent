@@ -6,8 +6,13 @@ export function startTelegram(token, onToggleAuto, onStatus) {
   const bot = new TelegramBot(token, { polling: true });
 
   bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, "🤖 Bot aktif!\n\nCommands:\n/auto on\n/auto off\n/status");
-  });
+  bot._chatId = msg.chat.id;
+
+  bot.sendMessage(
+    msg.chat.id,
+    "🤖 Bot aktif!\n\n/auto on\n/auto off\n/status"
+  );
+});
 
   bot.onText(/\/auto on/, (msg) => {
     AUTO_MODE = true;
@@ -29,6 +34,12 @@ export function startTelegram(token, onToggleAuto, onStatus) {
   return bot;
 }
 
+
+export function sendAlert(bot, message) {
+  if (!bot || !bot._chatId) return;
+
+  bot.sendMessage(bot._chatId, message);
+}
 export function isAutoMode() {
   return AUTO_MODE;
 }
