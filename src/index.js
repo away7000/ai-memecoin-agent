@@ -2,6 +2,7 @@ import { scanTokens } from "./services/scanner.js";
 import { shouldBuy } from "./strategy/decision.js";
 import { isSafeAdvanced } from "./strategy/safety.js";
 import { logTrade } from "./services/logger.js";
+import { checkTradeSafety } from "./strategy/honeypotReal.js";
 import { startTelegram, isAutoMode } from "./bot/telegram.js";
 
 const bot = startTelegram(
@@ -10,6 +11,26 @@ const bot = startTelegram(
   () => "Running"
 );
 
+for (let token of tokens.slice(0, 2)) {
+
+  // 🛡️ SAFETY CHECK REAL
+  const safety = await checkTradeSafety(token);
+
+  if (!safety.safe) {
+    console.log(`❌ SKIP ${token.symbol} | ${safety.reason}`);
+    continue;
+  }
+
+  console.log(`✅ SAFE ${token.symbol} | Loss ${safety.loss?.toFixed(2)}%`);
+
+  // lanjut AI decision
+  const { decision, features } = shouldBuy(token);
+
+  if (decision) {
+    console.log("🔥 BUY:", token.symbol);
+  }
+}
+
 async function scanLoop() {
   if (!isAutoMode()) return;
 
@@ -17,7 +38,7 @@ async function scanLoop() {
 
   const tokens = await scanTokens();
 
-  for (let token of tokens.slice(0, 2)) {
+  for (let token of tokens.slice(0, 1)) {
     const safe = await isSafeAdvanced(token);
 
     if (!safe) {
@@ -44,7 +65,7 @@ async function scanLoop() {
       console.log("❌ Skip:", token.symbol);
     }
 
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 1000));
   }
 }
 
