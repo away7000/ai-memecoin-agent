@@ -2,12 +2,24 @@ import 'dotenv/config';
 import { shouldBuy } from './strategy/decision.js';
 import { logTrade } from './services/logger.js';
 import { loadModel } from './ai/model.js';
+import { startTelegram, isAutoMode } from './bot/telegram.js';
 
 loadModel();
 
 console.log("🚀 AI Agent Started...");
 
-const sampleToken = {
+let lastStatus = "Idle...";
+
+startTelegram(
+  process.env.TELEGRAM_TOKEN,
+  (state) => {
+    console.log("AUTO MODE:", state);
+  },
+  () => lastStatus
+);
+
+// dummy token (nanti ganti API)
+const token = {
   symbol: "MEME",
   liquidity: 20000,
   volume_5m: 12000,
@@ -20,16 +32,23 @@ const sampleToken = {
 };
 
 setInterval(() => {
-  const { decision, features } = shouldBuy(sampleToken);
+  if (!isAutoMode()) {
+    lastStatus = "⏸️ Auto OFF";
+    return;
+  }
+
+  const { decision, features } = shouldBuy(token);
 
   if (decision) {
-    console.log("🔥 BUY EXECUTED");
+    lastStatus = `🔥 BUY ${token.symbol}`;
 
     const result = Math.random() > 0.5 ? 1 : 0;
     logTrade(features, result);
+
   } else {
-    console.log("❌ SKIP");
+    lastStatus = `❌ Skip ${token.symbol}`;
   }
 
-  console.log("------------");
+  console.log(lastStatus);
+
 }, 5000);
