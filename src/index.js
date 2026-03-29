@@ -1,21 +1,24 @@
 import { scanTokens } from "./services/scanner.js";
 import { shouldBuy } from "./strategy/decision.js";
-import { logTrade } from "./services/logger.js";
+import { startTelegram } from "./bot/telegram.js";
 
+// 🔥 1. START TELEGRAM DULU
+startTelegram(process.env.TELEGRAM_TOKEN, () => {}, () => "Running");
+
+// 🔥 2. BARU LOOP SCANNER
 setInterval(async () => {
+  console.log("🔍 Scanning...");
+
   const tokens = await scanTokens();
 
-  for (let token of tokens.slice(0, 5)) {
-    const { decision, features } = shouldBuy(token);
+  for (let token of tokens.slice(0, 2)) {
+    const { decision } = shouldBuy(token);
 
     if (decision) {
       console.log("🔥 BUY:", token.symbol);
-
-      const result = Math.random() > 0.5 ? 1 : 0;
-      logTrade(features, result);
     } else {
       console.log("❌ Skip:", token.symbol);
     }
   }
 
-}, 10000);
+}, 20000); // 🔥 20 detik
