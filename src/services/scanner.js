@@ -1,7 +1,16 @@
 export async function scanTokens() {
   try {
     const res = await fetch("https://api.dexscreener.com/latest/dex/pairs/solana");
-    const data = await res.json();
+
+    const text = await res.text();
+
+    // 🔥 cek dulu apakah JSON
+    if (!text.startsWith("{")) {
+      console.error("❌ Bukan JSON (kemungkinan kena rate limit)");
+      return [];
+    }
+
+    const data = JSON.parse(text);
 
     return data.pairs.map(pair => ({
       symbol: pair.baseToken.symbol,
