@@ -1,51 +1,50 @@
 import { scanTokens } from "./services/scanner.js";
 import { shouldBuy } from "./strategy/decision.js";
-import { startTelegram } from "./bot/telegram.js";
+import { isSafeAdvanced } from "./strategy/safety.js";
+import { logTrade } from "./services/logger.js";
+import { startTelegram, isAutoMode } from "./bot/telegram.js";
 
-let cooldown = false;
+const bot = startTelegram(
+  process.env.TELEGRAM_TOKEN,
+  () => {},
+  () => "Running"
+);
 
-// 🔥 1. START TELEGRAM DULU
-startTelegram(process.env.TELEGRAM_TOKEN, () => {}, () => "Running");
+async function scanLoop() {
+  if (!isAutoMode()) return;
 
-// 🔥 2. BARU LOOP SCANNER
-setInterval(async () => {
   console.log("🔍 Scanning...");
 
   const tokens = await scanTokens();
 
   for (let token of tokens.slice(0, 2)) {
-    const { decision } = shouldBuy(token);
+    const safe = await isSafeAdvanced(token);
+
+    if (!safe) {
+      console.log("❌ Unsafe:", token.symbol);
+      continue;
+    }
+
+    const { decision, features } = shouldBuy(token);
 
     if (decision) {
       console.log("🔥 BUY:", token.symbol);
+
+      // 📢 ALERT TELEGRAM
+      bot.sendMessage(
+        bot._chatId,
+        `🔥 BUY SIGNAL\n${token.symbol}\nLiquidity: ${token.liquidity}`
+      );
+
+      // 🧠 simulate result (nanti ganti real)
+      const result = Math.random() > 0.5 ? 1 : 0;
+
+      logTrade(features, result, token);
     } else {
       console.log("❌ Skip:", token.symbol);
     }
-  }
 
-}, 20000); // 🔥 20 detik
-
-async function scanLoop() {
-  if (cooldown) {
-    console.log("⏳ cooldown...");
-    return;
-  }
-
-  const tokens = await scanTokens();
-
-  if (tokens.length === 0) {
-    cooldown = true;
-    console.log("⚠️ no valid tokens, pause...");
-
-    setTimeout(() => {
-      cooldown = false;
-    }, 60000);
-
-    return;
-  }
-
-  for (let token of tokens.slice(0, 2)) {
-    console.log("🔥 Candidate:", token.symbol);
+    await new Promise(r => setTimeout(r, 500));
   }
 }
 
