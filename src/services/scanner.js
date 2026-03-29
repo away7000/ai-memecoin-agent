@@ -1,29 +1,11 @@
-import { scanDex } from "./scannerDex.js";
+
 import { validateWithHelius } from "./scannerHelius.js";
+import { scanGMGN } from "./scannerGMGN.js";
+
+import { scanGMGN } from "./scannerGMGN.js";
 
 export async function scanTokens() {
-  const tokens = await scanDex();
+  const tokens = await scanGMGN();
 
-  const results = [];
-
-  for (let token of tokens) {
-    const isValid = await validateWithHelius(token);
-
-    if (isValid) {
-      results.push({
-        ...token,
-        liquidity_locked: true,
-        mint_enabled: false
-      });
-
-      console.log("✅ VALID:", token.symbol);
-    } else {
-      console.log("❌ REJECT:", token.symbol);
-    }
-
-    // 🔥 delay biar gak kena limit
-    await new Promise(r => setTimeout(r, 500));
-  }
-
-  return results;
+  return tokens;
 }
