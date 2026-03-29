@@ -12,6 +12,8 @@ const bot = startTelegram(
 );
 
 
+ for (let token of tokens.slice(0, 2)) {
+
   // 🛡️ SAFETY CHECK REAL
   const safety = await checkTradeSafety(token);
 
