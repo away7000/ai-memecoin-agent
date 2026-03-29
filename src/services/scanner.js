@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 export async function scanTokens() {
   try {
     const res = await fetch("https://api.dexscreener.com/latest/dex/pairs/solana");
@@ -14,8 +12,8 @@ export async function scanTokens() {
       age_minutes: (Date.now() - pair.pairCreatedAt) / 60000,
       buys: pair.txns?.m5?.buys || 0,
       sells: pair.txns?.m5?.sells || 0,
-      liquidity_locked: true, // sementara default
-      mint_enabled: false     // sementara default
+      liquidity_locked: true,
+      mint_enabled: false
     }));
 
   } catch (err) {
