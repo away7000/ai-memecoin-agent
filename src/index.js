@@ -107,6 +107,5 @@ setInterval(scanLoop, 30000);
 
     await new Promise(r => setTimeout(r, 1000));
   }
-}
 
 setInterval(scanLoop, 30000);
