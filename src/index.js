@@ -5,36 +5,75 @@ import { logTrade } from "./services/logger.js";
 import { checkTradeSafety } from "./strategy/honeypotReal.js";
 import { startTelegram, isAutoMode } from "./bot/telegram.js";
 
+// 🚀 start telegram
 const bot = startTelegram(
   process.env.TELEGRAM_TOKEN,
   () => {},
   () => "Running"
 );
 
+// 🔁 main loop
+async function scanLoop() {
+  try {
+    if (!isAutoMode()) return;
 
- for (let token of tokens.slice(0, 1)) {
+    console.log("🔍 Scanning...");
 
-  // 🛡️ SAFETY CHECK REAL
-  const safety = await checkTradeSafety(token);
+    const tokens = await scanTokens();
 
-  if (!safety.safe) {
-    console.log(`❌ SKIP ${token.symbol} | ${safety.reason}`);
-    continue;
-  }
+    for (let token of tokens.slice(0, 1)) {
 
-  console.log(`✅ SAFE ${token.symbol} | Loss ${safety.loss?.toFixed(2)}%`);
+      // 🛡️ honeypot + slippage check
+      const safety = await checkTradeSafety(token);
 
-  // lanjut AI decision
-  const { decision, features } = shouldBuy(token);
+      if (!safety.safe) {
+        console.log(`❌ SKIP ${token.symbol} | ${safety.reason}`);
+        continue;
+      }
 
-  if (decision) {
-    console.log("🔥 BUY:", token.symbol);
+      console.log(`✅ SAFE ${token.symbol} | Loss ${safety.loss?.toFixed(2)}%`);
+
+      // 🔐 basic safety
+      const safe = await isSafeAdvanced(token);
+
+      if (!safe) {
+        console.log("❌ Unsafe:", token.symbol);
+        continue;
+      }
+
+      // 🧠 AI decision
+      const { decision, features } = shouldBuy(token);
+
+      if (decision) {
+        console.log("🔥 BUY:", token.symbol);
+
+        // 📢 Telegram alert
+        if (bot._chatId) {
+          bot.sendMessage(
+            bot._chatId,
+            `🔥 BUY SIGNAL\n${token.symbol}\nLiquidity: ${token.liquidity}`
+          );
+        }
+
+        // 🧠 simulate result
+        const result = Math.random() > 0.5 ? 1 : 0;
+        logTrade(features, result, token);
+
+      } else {
+        console.log("❌ Skip:", token.symbol);
+      }
+
+      // ⏱️ delay biar gak kena limit
+      await new Promise(r => setTimeout(r, 1000));
+    }
+
+  } catch (err) {
+    console.error("❌ Loop error:", err);
   }
 }
 
-async function scanLoop() {
-  if (!isAutoMode()) return;
-
+// ⏰ run tiap 30 detik
+setInterval(scanLoop, 30000);
   console.log("🔍 Scanning...");
 
   const tokens = await scanTokens();
